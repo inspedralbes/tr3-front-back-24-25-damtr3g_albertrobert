@@ -1,0 +1,44 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+
+# Vuetify / Vue.js
+dist/
+*.local
+*.log
+*.env
+.idea/
+.vscode/
+
+# Archivos de configuración de IDE
+/.vscode/
+/.idea/
+
+# Archivos de compilación de Vue
+*.map
+*.css.map
+*.js.map
+
+# Dependencias del frontend
+node_modules/
+
+# Dependencias de producción (si las hubiera)
+*.tar.gz
+*.tgz
+
+# Cache de npm y Yarn
+/.npm/
+/.yarn/
+
+# Directorios de la base de datos
+db/
+
+# Archivos temporales
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
