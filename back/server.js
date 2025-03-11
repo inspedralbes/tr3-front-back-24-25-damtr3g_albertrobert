@@ -2,9 +2,10 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
+const cors = require('cors');
 
 // Configurar la base de dades amb Sequelize
-const sequelize = new Sequelize('database', 'username', 'password', {
+const sequelize = new Sequelize('tr3_albrobfon', 'admin', 'jirafaCuadrada', {
     host: 'localhost',
     dialect: 'mysql'
 });
@@ -30,7 +31,13 @@ sequelize.sync();
 
 // Configurar Express
 const app = express();
-const port = 3000;
+const port = 4000;
+
+app.use(cors({
+    origin: 'http://localhost:3000', // Permet només el teu frontend
+    methods: 'GET,POST,PUT,DELETE',
+    allowedHeaders: 'Content-Type'
+}));
 
 // Configurar multer per a pujar imatges a la carpeta 'uploads'
 const storage = multer.diskStorage({
