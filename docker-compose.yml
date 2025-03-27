@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   frontend:
     build:
       context: ./front/tr3albrobfon
       dockerfile: Dockerfile
+      target: development
     ports:
       - "5173:5173"
     volumes:
@@ -14,6 +13,7 @@ services:
       - VITE_API_URL=http://backend:3000
     depends_on:
       - backend
+    mem_limit: "1g"
 
   backend:
     build: 
@@ -29,6 +29,7 @@ services:
     depends_on:
       - mysql
       - mongodb
+    mem_limit: "512m"
 
   mysql:
     image: mysql:8.0
@@ -39,6 +40,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    mem_limit: "512m"
 
   mongodb:
     image: mongo:latest
@@ -46,6 +48,7 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    mem_limit: "512m"
 
 volumes:
   mysql_data:

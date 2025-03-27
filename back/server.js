@@ -5,6 +5,8 @@ const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
 const cors = require('cors');
 const {connectDB, saveScore, Score} = require('./db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 // Configurar la base de dades amb Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
@@ -28,6 +30,24 @@ const Image = sequelize.define('Image', {
     }
 });
 
+// Definim el model User
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+});
+
 // Sincronitzar la base de dades
 sequelize.sync();
 
@@ -44,6 +64,20 @@ app.use(cors({
     methods: 'GET,POST,PUT,DELETE',
     allowedHeaders: 'Content-Type'
 }));
+
+// Middleware per verificar el token JWT
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) return res.sendStatus(401);
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
 
 // Configurar multer per a pujar imatges a la carpeta 'uploads'
 const storage = multer.diskStorage({
@@ -118,6 +152,71 @@ app.post('/api/config', (req, res) => {
   // Endpoint para obtener configuración (Unity)
 app.get('/api/config', (req, res) => {
     res.status(200).json(gameConfig);
+});
+
+// Endpoint per registrar un usuari
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // Comprovar si l'usuari ja existeix
+        const existingUser = await User.findOne({ where: { username } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'El nom d\'usuari ja existeix' });
+        }
+        
+        // Encriptar la contrasenya
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Crear l'usuari
+        const newUser = await User.create({
+            username,
+            password: hashedPassword
+        });
+        
+        res.status(201).json({ message: 'Usuari registrat correctament' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error en registrar l\'usuari' });
+    }
+});
+
+// Endpoint per fer login
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        console.log(username);
+        console.log(password);
+        // Buscar l'usuari
+        const user = await User.findOne({ where: { username } });
+        if (!user) {
+            console.log("No es troba l'user");
+            return res.status(401).json({ error: 'Credencials incorrectes' });
+        }
+        console.log(user);
+        // Comparar contrasenyes
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            console.log("No es troba el password");
+            return res.status(401).json({ error: 'Credencials incorrectes' });
+        }
+        
+        // Generar token JWT
+        const token = jwt.sign(
+            { userId: user.id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        
+        res.json({ token, username: user.username });
+    } catch (error) {
+        res.status(500).json({ error: 'Error en el login' });
+    }
+});
+
+// Endpoint protegit d'exemple
+app.get('/api/protected', authenticateToken, (req, res) => {
+    res.json({ message: `Benvingut ${req.user.username}! Aquesta és una ruta protegida.` });
 });
 
 // Iniciar el servidor

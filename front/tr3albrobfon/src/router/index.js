@@ -29,6 +29,17 @@ router.onError((err, to) => {
   }
 })
 
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const token = localStorage.getItem('authToken');
+
+  if (requiresAuth && !token) {
+    next('/login');
+  } else {
+    next();
+  }
+});
+
 router.isReady().then(() => {
   localStorage.removeItem('vuetify:dynamic-reload')
 })

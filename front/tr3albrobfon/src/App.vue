@@ -1,9 +1,6 @@
 
 <template>
   <v-app>
-    <!-- Componente de la barra de navegación -->
-    <NavBar />
-
     <!-- Contenido principal -->
     <v-main>
       <router-view></router-view>
@@ -11,6 +8,13 @@
   </v-app>
 </template>
 
-<script>
+<!-- <script>
   import NavBar from '@/components/navBar.vue';
+</script> -->
+<script>
+  export default {
+    created() {
+      this.$router.push('/login'); // Redirigeix a login
+    }
+  }
 </script>
