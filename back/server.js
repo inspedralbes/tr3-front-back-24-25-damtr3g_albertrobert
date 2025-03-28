@@ -7,6 +7,9 @@ const cors = require('cors');
 const {connectDB, saveScore, Score} = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const WebSocket = require('ws');
+
+const wss = new WebSocket.Server({ noServer: true });
 
 // Configurar la base de dades amb Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
@@ -94,6 +97,18 @@ let gameConfig = {
     maxX: 36.0,
     alternativeSpawnChance: 0.2
 };
+
+// Agregar esto después de crear la app de Express
+const server = app.listen(process.env.PORT, () => {
+    console.log(`Servidor en funcionamiento en http://localhost:${process.env.PORT}`);
+});
+
+// Upgrade del servidor HTTP para WebSockets
+server.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+});
 
 // Endpoint per a pujar una imatge
 app.post('/upload', upload.single('image'), async (req, res) => {
@@ -217,6 +232,29 @@ app.post('/api/login', async (req, res) => {
 // Endpoint protegit d'exemple
 app.get('/api/protected', authenticateToken, (req, res) => {
     res.json({ message: `Benvingut ${req.user.username}! Aquesta és una ruta protegida.` });
+});
+
+// Manejar conexiones WebSocket
+wss.on('connection', (ws) => {
+    console.log('Nuevo cliente WebSocket conectado');
+  
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message);
+        // Retransmitir a todos los clientes (incluyendo Unity)
+        wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+          }
+        });
+      } catch (error) {
+        console.error('Error procesando mensaje WebSocket:', error);
+      }
+    });
+  
+    ws.on('close', () => {
+      console.log('Cliente WebSocket desconectado');
+    });
 });
 
 // Iniciar el servidor

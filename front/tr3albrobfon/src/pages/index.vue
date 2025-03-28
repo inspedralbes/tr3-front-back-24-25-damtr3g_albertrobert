@@ -6,6 +6,8 @@
     <br>
     <SpawnConfig/>
     <br>
+    <RealTimeConfig/>
+    <br>
     <StatsTable/>
   </v-main>
 </template>
@@ -13,6 +15,7 @@
 <script>
 import NavBar from '@/components/navBar.vue';
 import PostImage from '@/components/PostImage.vue';
+import RealTimeConfig from '@/components/RealTimeConfig.vue';
 import SpawnConfig from '@/components/SpawnConfig.vue';
 import StatsTable from '@/components/StatsTable.vue';
 
