@@ -105,7 +105,7 @@
         this.error = null;
         
         try {
-          const response = await fetch('http://localhost:4000/api/scores');
+          const response = await fetch('http://localhost:4000/scores/scores');
           
           if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
           

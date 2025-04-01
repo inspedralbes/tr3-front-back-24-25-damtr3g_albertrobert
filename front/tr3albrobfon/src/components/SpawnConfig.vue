@@ -73,7 +73,7 @@
       async submitConfig() {
         this.loading = true;
         try {
-          const response = await fetch('http://localhost:4000/api/config', {
+          const response = await fetch('http://localhost:4000/config/config', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

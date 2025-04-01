@@ -49,7 +49,7 @@ export default {
 
   methods: {
     connectWebSocket() {
-      this.ws = new WebSocket('ws://localhost:4000/ws');
+      this.ws = new WebSocket('ws://localhost:4005/ws');
 
       this.ws.onopen = () => {
         console.log('Conexión WebSocket establecida');

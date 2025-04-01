@@ -40,15 +40,15 @@
         formData.append('image', this.file);
   
         try {
-          const response = await fetch('http://localhost:4000/upload', {
+          const response = await fetch('http://localhost:4000/images/upload', {
             method: 'POST',
             body: formData,
           });
   
           if (response.ok) {
             const data = await response.json(); // Asumiendo que el servidor devuelve la URL
-            this.imageUrl = `http://localhost:4000/image/${data.image.name}`; // Actualizar la URL de la imagen
-            console.log(`http://localhost:4000/image/${data.image.name}`);
+            this.imageUrl = `http://localhost:4000/images/${data.image.name}`; // Actualizar la URL de la imagen
+            console.log(`http://localhost:4000/images/${data.image.name}`);
             this.message = 'Imatge pujada correctament!';
             this.messageType = 'success';
           } else {
