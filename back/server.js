@@ -1,263 +1,235 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const multer = require('multer');
 const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
 const cors = require('cors');
-const {connectDB, saveScore, Score} = require('./db');
+const { connectDB, saveScore, Score } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ noServer: true });
-
-// Configurar la base de dades amb Sequelize
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
+// Configuración de Sequelize (MySQL)
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
     host: process.env.DB_HOST,
     dialect: 'mysql'
-});
+  }
+);
 
+// Modelo Image
 const Image = sequelize.define('Image', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    path: {
-        type: DataTypes.STRING,
-        allowNull: false
-    }
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  path: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
 });
 
-// Definim el model User
+// Modelo User
 const User = sequelize.define('User', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false
-    }
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
 });
 
-// Sincronitzar la base de dades
+// Sincronizar modelos MySQL
 sequelize.sync();
 
-// Connexió a MongoDB
+// Configurar Express y WebSocket
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+// Conectar a MongoDB
 connectDB();
 
-// Configurar Express
-const app = express();
-const port = 4000;
+// Middlewares
 app.use(express.json());
-
 app.use(cors({
-    origin: process.env.CLIENT_ORIGIN, // Permet només el teu frontend
-    methods: 'GET,POST,PUT,DELETE',
-    allowedHeaders: 'Content-Type'
+  origin: process.env.CLIENT_ORIGIN,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Middleware per verificar el token JWT
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) return res.sendStatus(401);
-    
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
-};
-
-// Configurar multer per a pujar imatges a la carpeta 'uploads'
+// Configuración de Multer
 const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
+  destination: './uploads/',
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
 });
 const upload = multer({ storage });
 
+// Configuración del juego
 let gameConfig = {
-    spawnRate: 2.0,
-    minX: -36.0,
-    maxX: 36.0,
-    alternativeSpawnChance: 0.2
+  spawnRate: 2.0,
+  minX: -36.0,
+  maxX: 36.0,
+  alternativeSpawnChance: 0.2
 };
 
-// Agregar esto después de crear la app de Express
-const server = app.listen(process.env.PORT, () => {
-    console.log(`Servidor en funcionamiento en http://localhost:${process.env.PORT}`);
+// WebSocket Server
+wss.on('connection', (ws) => {
+  console.log('Nuevo cliente WebSocket conectado');
+
+  ws.on('message', (message) => {
+    console.log('Mensaje recibido:', message); // ← Añade este log
+    try {
+      const data = JSON.parse(message);
+      // Retransmitir a todos los clientes
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(data));
+          console.log("Dades WS enviades al Unity")
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando mensaje:', error);
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('Cliente WebSocket desconectado');
+  });
 });
 
-// Upgrade del servidor HTTP para WebSockets
-server.on('upgrade', (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
-});
+// Middleware de autenticación JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-// Endpoint per a pujar una imatge
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+// Endpoints
 app.post('/upload', upload.single('image'), async (req, res) => {
-    try {
-        const newImage = await Image.create({
-            name: req.file.originalname,
-            path: req.file.path
-        });
-        res.json({ message: 'Imatge pujada correctament', image: newImage });
-    } catch (error) {
-        res.status(500).json({ error: 'Error en pujar la imatge' });
-    }
+  try {
+    const newImage = await Image.create({
+      name: req.file.originalname,
+      path: req.file.path
+    });
+    res.json({ message: 'Imagen subida correctamente', image: newImage });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al subir la imagen' });
+  }
 });
 
-// Endpoint per obtenir una imatge per nom
 app.get('/image/:name', async (req, res) => {
-    try {
-        const image = await Image.findOne({ where: { name: req.params.name } });
-        if (!image) return res.status(404).json({ error: 'Imatge no trobada' });
-        res.sendFile(path.resolve(image.path));
-    } catch (error) {
-        res.status(500).json({ error: 'Error en obtenir la imatge' });
-    }
+  try {
+    const image = await Image.findOne({ where: { name: req.params.name } });
+    if (!image) return res.status(404).json({ error: 'Imagen no encontrada' });
+    res.sendFile(path.resolve(image.path));
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener la imagen' });
+  }
 });
 
 app.post('/api/scores', async (req, res) => {
-    try {
-      const score = req.body;
-      const savedScore = await saveScore(score);
-      res.status(201).json(savedScore);
-    } catch (error) {
-      res.status(500).json({ error: 'Error en guardar la puntuació' });
-    }
+  try {
+    const savedScore = await saveScore(req.body);
+    res.status(201).json(savedScore);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar la puntuación' });
+  }
 });
 
-// Obtenir totes les puntuacions
 app.get('/api/scores', async (req, res) => {
-    try {
-      const scores = await Score.find().sort({ score: -1 }); // Ordena per puntuació descendent
-      res.json(scores);
-    } catch (error) {
-      res.status(500).json({ error: 'Error en obtenir les puntuacions' });
-    }
+  try {
+    const scores = await Score.find().sort({ score: -1 });
+    res.json(scores);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las puntuaciones' });
+  }
 });
-  
-// Endpoint para guardar configuración
+
 app.post('/api/config', (req, res) => {
-    try {
-      gameConfig = req.body;
-      res.status(200).json(gameConfig);
-    } catch (error) {
-      res.status(500).json({ error: 'Error al guardar configuración' });
-    }
-});
-  
-  // Endpoint para obtener configuración (Unity)
-app.get('/api/config', (req, res) => {
+  try {
+    gameConfig = req.body;
     res.status(200).json(gameConfig);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar la configuración' });
+  }
 });
 
-// Endpoint per registrar un usuari
+app.get('/api/config', (req, res) => {
+  res.status(200).json(gameConfig);
+});
+
 app.post('/api/register', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        // Comprovar si l'usuari ja existeix
-        const existingUser = await User.findOne({ where: { username } });
-        if (existingUser) {
-            return res.status(400).json({ error: 'El nom d\'usuari ja existeix' });
-        }
-        
-        // Encriptar la contrasenya
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Crear l'usuari
-        const newUser = await User.create({
-            username,
-            password: hashedPassword
-        });
-        
-        res.status(201).json({ message: 'Usuari registrat correctament' });
-    } catch (error) {
-        res.status(500).json({ error: 'Error en registrar l\'usuari' });
+  try {
+    const { username, password } = req.body;
+    
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'El usuario ya existe' });
     }
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({ username, password: hashedPassword });
+    
+    res.status(201).json({ message: 'Usuario registrado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar el usuario' });
+  }
 });
 
-// Endpoint per fer login
 app.post('/api/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        console.log(username);
-        console.log(password);
-        // Buscar l'usuari
-        const user = await User.findOne({ where: { username } });
-        if (!user) {
-            console.log("No es troba l'user");
-            return res.status(401).json({ error: 'Credencials incorrectes' });
-        }
-        console.log(user);
-        // Comparar contrasenyes
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-            console.log("No es troba el password");
-            return res.status(401).json({ error: 'Credencials incorrectes' });
-        }
-        
-        // Generar token JWT
-        const token = jwt.sign(
-            { userId: user.id, username: user.username },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-        
-        res.json({ token, username: user.username });
-    } catch (error) {
-        res.status(500).json({ error: 'Error en el login' });
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ where: { username } });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
+
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    
+    res.json({ token, username: user.username });
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el login' });
+  }
 });
 
-// Endpoint protegit d'exemple
 app.get('/api/protected', authenticateToken, (req, res) => {
-    res.json({ message: `Benvingut ${req.user.username}! Aquesta és una ruta protegida.` });
+  res.json({ message: `Bienvenido ${req.user.username}! Ruta protegida` });
 });
 
-// Manejar conexiones WebSocket
-wss.on('connection', (ws) => {
-    console.log('Nuevo cliente WebSocket conectado');
-  
-    ws.on('message', (message) => {
-      try {
-        const data = JSON.parse(message);
-        // Retransmitir a todos los clientes (incluyendo Unity)
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-          }
-        });
-      } catch (error) {
-        console.error('Error procesando mensaje WebSocket:', error);
-      }
-    });
-  
-    ws.on('close', () => {
-      console.log('Cliente WebSocket desconectado');
-    });
-});
-
-// Iniciar el servidor
-app.listen(process.env.PORT, () => {
-    console.log(`Servidor en funcionament a http://localhost:${process.env.PORT}`);
+// Iniciar servidor
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`Servidor funcionando en http://localhost:${PORT}`);
 });
