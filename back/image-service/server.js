@@ -35,7 +35,12 @@ const Image = sequelize.define('Image', {
 sequelize.sync();
 
 // Configuración de Multer
-const storage = multer.diskStorage({ /* ... */ });
+const storage = multer.diskStorage({
+  destination: './uploads/',
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+});
 const upload = multer({ storage });
 
 app.post('/upload', upload.single('image'), async (req, res) => {
