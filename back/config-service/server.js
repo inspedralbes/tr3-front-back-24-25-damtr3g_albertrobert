@@ -24,6 +24,14 @@ app.post('/config', (req, res) => {
     }
 });
 
+app.get('/health', (req, res) => {
+    res.json({
+      status: 'active',
+      configVersion: '1.2.3',
+      lastUpdate: new Date().toISOString()
+    });
+});
+
 app.listen(4003, () => {
   console.log('Config Service funcionando en puerto 4003');
 });

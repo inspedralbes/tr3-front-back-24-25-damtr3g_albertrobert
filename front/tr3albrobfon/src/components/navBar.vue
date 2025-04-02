@@ -15,6 +15,14 @@
 
     <!-- Botons de navegació -->
     <v-btn
+      to="/"
+      text
+      class="nav-btn"
+    >
+      <v-icon left>mdi-server</v-icon>
+      Configuració
+    </v-btn>
+    <v-btn
       to="/services"
       text
       class="nav-btn"

@@ -93,6 +93,24 @@ app.get('/api/protected', authenticateToken, (req, res) => {
     res.json({ message: `Bienvenido ${req.user.username}! Ruta protegida` });
 });
 
+// Verificació de connexió a MySQL
+const checkDatabase = async () => {
+  try {
+    await sequelize.authenticate();
+    return 'connected';
+  } catch (error) {
+    return 'disconnected';
+  }
+};
+
+app.get('/health', async (req, res) => {
+  res.json({
+    status: 'active',
+    database: await checkDatabase(),
+    uptime: process.uptime().toFixed(2) + 's'
+  });
+});
+
 app.listen(4001, () => {
   console.log('Auth Service funcionando en puerto 4001');
 });

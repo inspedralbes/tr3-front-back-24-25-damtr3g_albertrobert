@@ -1,7 +1,9 @@
 const WebSocket = require('ws');
 const http = require('http');
 
-const server = http.createServer();
+const express = require('express');
+const app = express();
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
 wss.on('connection', (ws) => {
@@ -26,6 +28,14 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
       console.log('Cliente WebSocket desconectado');
     });
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'active',
+    clients: wss.clients.size,
+    uptime: process.uptime().toFixed(2) + 's'
+  });
 });
 
 server.listen(4005, () => {

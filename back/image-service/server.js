@@ -65,6 +65,14 @@ app.get('/:name', async (req, res) => {
     }
 });
 
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'active',
+    storage: fs.existsSync('./uploads') ? 'OK' : 'ERROR',
+    files: fs.readdirSync('./uploads').length
+  });
+});
+
 app.listen(4002, () => {
   console.log('Image Service funcionando en puerto 4002');
 });

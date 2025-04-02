@@ -22,6 +22,16 @@ app.use('/scores', createProxyMiddleware({
   changeOrigin: true 
 }));
 
+// Afegeix després de configurar Express
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'active',
+    service: 'API Gateway',
+    timestamp: new Date(),
+    version: '1.0.0'
+  });
+});
+
 app.listen(4000, () => {
   console.log('API Gateway funcionando en puerto 4000');
 });

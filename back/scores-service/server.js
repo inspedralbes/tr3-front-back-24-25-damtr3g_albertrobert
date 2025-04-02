@@ -53,6 +53,24 @@ const saveScore = async (playerData) => {
   }
 };
 
+// Verificació de MongoDB
+const checkMongoDB = async () => {
+  try {
+    await mongoose.connection.db.admin().ping();
+    return 'connected';
+  } catch (error) {
+    return 'disconnected';
+  }
+};
+
+app.get('/health', async (req, res) => {
+  res.json({
+    status: 'active',
+    database: await checkMongoDB(),
+    records: await Score.countDocuments()
+  });
+});
+
 app.listen(4004, () => {
   console.log('Scores Service funcionando en puerto 4004');
 });
