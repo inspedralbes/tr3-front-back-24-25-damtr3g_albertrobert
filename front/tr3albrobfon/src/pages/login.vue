@@ -82,16 +82,25 @@
                 password: this.password
             })
             });
-
-            const data = await response.json();
-            
-            // Guardar directament a localStorage
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('username', data.username);
-            
-            this.$router.push('/');
+            // Verificar si la resposta és correcta (2xx)
+            if (response.ok) {
+              const data = await response.json();
+              
+              // Guardar a localStorage
+              localStorage.setItem('authToken', data.token);
+              localStorage.setItem('username', data.username);
+              
+              this.$router.push('/');
+            } else {
+              // Si la resposta és d'error (401, 404, etc.)
+              const errorData = await response.json(); // Suposant que el servidor retorna JSON amb detalls de l'error
+              console.error("Error:", errorData.message || "Credencials Incorrectes");
+              
+              // Opcional: Mostrar missatge a l'usuari
+              alert(errorData.message || "Credencials Incorrectes");
+            }
         } catch (error) {
-            console.error('Error en login:', error);
+            console.error('Error al login:', error);
         }
     },
       goToRegister() {

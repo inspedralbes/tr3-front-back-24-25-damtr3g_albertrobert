@@ -36,7 +36,7 @@ sequelize.sync();
 
 // Configuración de Multer
 const storage = multer.diskStorage({
-  destination: './uploads/',
+  destination: './image-service/uploads/',
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   }
