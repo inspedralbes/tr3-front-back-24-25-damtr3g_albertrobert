@@ -6,8 +6,8 @@ app.use(cors());
 
 let gameConfig = {
     spawnRate: 2.0,
-    minX: -36.0,
-    maxX: 36.0,
+    minX: -43.0,
+    maxX: 43.0,
     alternativeSpawnChance: 0.2
 };
 

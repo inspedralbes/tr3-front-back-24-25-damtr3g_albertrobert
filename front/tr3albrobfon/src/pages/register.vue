@@ -49,7 +49,7 @@
               color="primary"
               block
               :loading="loading"
-              :disabled="valid || loading"
+              :disabled="!valid || loading"
             >
               Registrar-se
             </v-btn>
@@ -85,12 +85,16 @@
       passwordRules: [
         v => !!v || 'La contrasenya és obligatòria',
         v => (v && v.length >= 6) || 'La contrasenya ha de tenir com a mínim 6 caràcters'
-      ],
-      confirmPasswordRules: [
-        v => !!v || 'Confirmar la contrasenya és obligatori',
-        v => v === this.password || 'Les contrasenyes no coincideixen'
       ]
     }),
+    computed: {
+    confirmPasswordRules() {
+      return [
+        v => !!v || 'Confirmar la contrasenya és obligatori',
+        v => v === this.password || 'Les contrasenyes no coincideixen'
+      ];
+    }
+  },
     methods: {
       async register() {
         if (!this.$refs.form.validate()) return;
