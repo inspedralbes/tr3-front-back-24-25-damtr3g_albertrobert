@@ -159,14 +159,51 @@
         service.loading = false
       },
       async startService(service) {
-        // Implementa la crida a la teva API per iniciar el servei
-        console.log(`Iniciant ${service.name}`)
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simulació
+        try {
+          const response = await fetch(`${service.baseUrl}/start`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            // Si necessites enviar dades:
+            // body: JSON.stringify({ key: 'value' })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Error en iniciar el servei');
+          }
+          
+          const data = await response.json();
+          console.log(`${service.name} iniciat:`, data.message);
+          service.status = 'offline';
+          return data;
+        } catch (error) {
+          console.error(`Error en iniciar ${service.name}:`, error);
+          throw error;
+        }
       },
+
       async stopService(service) {
-        // Implementa la crida a la teva API per aturar el servei
-        console.log(`Aturant ${service.name}`)
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simulació
+        try {
+          const response = await fetch(`${service.baseUrl}/stop`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error('Error en aturar el servei');
+          }
+          
+          const data = await response.json();
+          console.log(`${service.name} aturat:`, data.message);
+          service.status = 'active';
+          return data;
+        } catch (error) {
+          console.error(`Error en aturar ${service.name}:`, error);
+          throw error;
+        }
       }
     }
   }

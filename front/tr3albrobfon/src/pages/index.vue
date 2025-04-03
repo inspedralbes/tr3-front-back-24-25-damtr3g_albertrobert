@@ -9,10 +9,13 @@
     <RealTimeConfig/>
     <br>
     <StatsTable/>
+    <br>
+    <Chart/>
   </v-main>
 </template>
 
 <script>
+import Chart from '@/components/chart.vue';
 import NavBar from '@/components/navBar.vue';
 import PostImage from '@/components/PostImage.vue';
 import RealTimeConfig from '@/components/RealTimeConfig.vue';

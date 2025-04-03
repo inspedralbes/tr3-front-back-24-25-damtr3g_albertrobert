@@ -47,8 +47,8 @@
   
           if (response.ok) {
             const data = await response.json(); // Asumiendo que el servidor devuelve la URL
-            this.imageUrl = `http://localhost:4000/images/${data.image.name}`; // Actualizar la URL de la imagen
-            console.log(`http://localhost:4000/images/${data.image.name}`);
+            this.imageUrl = `http://localhost:4000/images/a/${data.image.name}`; // Actualizar la URL de la imagen
+            console.log(`http://localhost:4000/images/a/${data.image.name}`);
             this.message = 'Imatge pujada correctament!';
             this.messageType = 'success';
           } else {

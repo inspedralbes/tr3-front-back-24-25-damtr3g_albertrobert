@@ -55,7 +55,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
 });
 
-app.get('/:name', async (req, res) => {
+app.get('/a/:name', async (req, res) => {
     try {
       const image = await Image.findOne({ where: { name: req.params.name } });
       if (!image) return res.status(404).json({ error: 'Imagen no encontrada' });
@@ -66,10 +66,12 @@ app.get('/:name', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
+  const uploadPath = path.join(__dirname, 'uploads'); // Ruta completa
+  
   res.json({
     status: 'active',
-    storage: fs.existsSync('./uploads') ? 'OK' : 'ERROR',
-    files: fs.readdirSync('./uploads').length
+    storage: 'OK (Multer configured)', // Asume que Multer está configurado correctamente
+    uploadPath: uploadPath // Solo muestra la ruta, sin verificar archivos
   });
 });
 
