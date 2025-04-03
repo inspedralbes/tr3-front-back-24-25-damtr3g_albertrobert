@@ -1,0 +1,55 @@
+services:
+  frontend:
+    build:
+      context: ./front/tr3albrobfon
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front/tr3albrobfon:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://backend:3000
+    depends_on:
+      - backend
+    mem_limit: "1g"
+
+  backend:
+    build: 
+      context: ./back
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./back:/app
+      - /app/node_modules
+    depends_on:
+      - mysql
+      - mongodb
+    mem_limit: "512m"
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tr3db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    mem_limit: "512m"
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    mem_limit: "512m"
+
+volumes:
+  mysql_data:
+  mongodb_data:
